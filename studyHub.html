@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js"></script>
+
+    <style>
+        body {
+            background: #f8f9fa;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .card {
+            border-radius: 12px;
+        }
+
+        .dashboard-section,
+        .admin-section,
+        .user-section,
+        .contact-section {
+            display: none;
+        }
+
+        .show-section {
+            display: block !important;
+        }
+
+        .footer {
+            background: #343a40;
+            color: #fff;
+            padding: 1.5rem 0;
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        @media (max-width: 576px) {
+
+            .container,
+            .admin-panel {
+                padding: 1rem !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#" onclick="showSection('home')">StudyHub</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto" id="navLinks">
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('home')">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('register')">Register</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('login')">User Login</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('adminLogin')">Admin Login</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('contact')">Contact</a></li>
+                </ul>
+                <ul class="navbar-nav ms-auto d-none" id="userNav">
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('userDashboard')">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="logoutUser()">Logout</a></li>
+                </ul>
+                <ul class="navbar-nav ms-auto d-none" id="adminNav">
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('adminDashboard')">Admin Panel</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="logoutAdmin()">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section id="home" class="container py-5 dashboard-section show-section">
+        <div class="text-center">
+            <h1 class="display-5 fw-bold">Welcome to StudyHub</h1>
+            <p class="lead">Register or login to access study materials, videos, and more. Admins can manage all content and users.</p>
+            <img src="https://img.freepik.com/free-vector/online-tutorials-concept_52683-37480.jpg" class="img-fluid rounded" style="max-width: 400px;">
+        </div>
+    </section>
+
+    <section id="register" class="container py-5 dashboard-section">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card p-4">
+                    <h3 class="mb-3">User Registration</h3>
+                    <form id="registerForm">
+                        <div class="mb-2"><input type="text" class="form-control" id="regName" placeholder="Full Name" required></div>
+                        <div class="mb-2"><input type="email" class="form-control" id="regEmail" placeholder="Email" required></div>
+                        <div class="mb-2"><input type="password" class="form-control" id="regPassword" placeholder="Password" required></div>
+                        <div class="mb-2"><input type="text" class="form-control" id="regSemester" placeholder="Semester (e.g., 1, 2, Placement)" required></div>
+                        <button type="submit" class="btn btn-primary w-100">Register</button>
+                    </form>
+                    <div class="mt-2 text-success d-none" id="registerSuccess">Registration successful! Please login.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="login" class="container py-5 dashboard-section">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card p-4">
+                    <h3 class="mb-3">User Login</h3>
+                    <form id="loginForm">
+                        <div class="mb-2"><input type="email" class="form-control" id="loginEmail" placeholder="Email" required></div>
+                        <div class="mb-2"><input type="password" class="form-control" id="loginPassword" placeholder="Password" required></div>
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </form>
+                    <div class="mt-2 text-danger d-none" id="loginError">Invalid credentials!</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="adminLogin" class="container py-5 dashboard-section">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card p-4">
+                    <h3 class="mb-3">Admin Login</h3>
+                    <form id="adminLoginForm">
+                        <div class="mb-2"><input type="text" class="form-control" id="adminUsername" placeholder="Username" required></div>
+                        <div class="mb-2"><input type="password" class="form-control" id="adminPassword" placeholder="Password" required></div>
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </form>
+                    <div class="mt-2 text-danger d-none" id="adminLoginError">Invalid admin credentials!</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="userDashboard" class="container py-5 user-section">
+        <div class="mb-4">
+            <h2>Study Materials</h2>
+            <div id="userMaterials" class="row g-4"></div>
+        </div>
+    </section>
+
+    <section id="adminDashboard" class="container py-5 admin-section">
+        <div class="mb-4">
+            <h2>Admin Panel</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card p-3 mb-4">
+                        <h5>Add Study Material</h5>
+                        <form id="addMaterialForm">
+                            <div class="mb-2"><input type="text" class="form-control" id="materialTitle" placeholder="Title" required></div>
+                            <div class="mb-2">
+                                <select class="form-select" id="materialType" required>
+                                    <option value="">Select Type</option>
+                                    <option value="pdf">PDF</option>
+                                    <option value="video">Video</option>
+                                </select>
+                            </div>
+                            <div class="mb-2"><input type="text" class="form-control" id="materialLink" placeholder="PDF URL or Video URL" required></div>
+                            <div class="mb-2"><input type="text" class="form-control" id="materialSemester" placeholder="Semester/Category" required></div>
+                            <button type="submit" class="btn btn-success w-100">Add Material</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-3 mb-4">
+                        <h5>All Registered Users</h5>
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Semester</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUserTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="card p-3 mb-4">
+                    <h5>Contact Messages</h5>
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminContactTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-12 mb-3">
+                <button class="btn btn-outline-success me-2" onclick="exportUsersToExcel()">Export Users to Excel</button>
+                <button class="btn btn-outline-info" onclick="exportMessagesToExcel()">Export Messages to Excel</button>
+
+            </div>
+            <div class="card p-3">
+                <h5>All Study Materials</h5>
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Link</th>
+                            <th>Semester</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminMaterialTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="container py-5 contact-section">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card p-4">
+                    <h3 class="mb-3">Contact Us</h3>
+                    <form id="contactForm">
+                        <div class="mb-2"><input type="text" class="form-control" id="contactName" placeholder="Your Name" required></div>
+                        <div class="mb-2"><input type="email" class="form-control" id="contactEmail" placeholder="Your Email" required></div>
+                        <div class="mb-2"><textarea class="form-control" id="contactMsg" placeholder="Message" required></textarea></div>
+                        <button type="submit" class="btn btn-primary w-100">Send</button>
+                    </form>
+                    <div class="mt-2 text-success d-none" id="contactSuccess">Message sent! We'll get back to you soon.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div>Created by Prathamesh Powar | Mobile: 9511270639 | Email: prathameshpowar524@gmail.com</div>
+    </footer>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <script type="module">
+        import {
+            initializeApp
+        } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            getDocs,
+            doc,
+            getDoc,
+            deleteDoc,
+            query,
+            where,
+            onSnapshot
+        } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+        // Your Firebase configuration (from Firebase Console)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBhMg7DeB9XlZxAQBD039aXzhpfcGVz8Os",
+            authDomain: "studyhub-15ece.firebaseapp.com",
+            projectId: "studyhub-15ece",
+            storageBucket: "studyhub-15ece.firebasestorage.app",
+            messagingSenderId: "852299564966",
+            appId: "1:852299564966:web:4cface9f7c1adbc6613167",
+            measurementId: "G-Z52VE6YZD9"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let isAdmin = false;
+
+        // Admin credentials (for demo)
+        const ADMIN_USERNAME = 'admin';
+        const ADMIN_PASSWORD = 'admin123';
+
+        // Section navigation
+        function showSection(sectionId) {
+            document.querySelectorAll('.dashboard-section, .admin-section, .user-section, .contact-section').forEach(s => s.classList.remove('show-section'));
+            document.getElementById(sectionId).classList.add('show-section');
+
+            // Navbar logic
+            const navLinks = document.getElementById('navLinks');
+            const userNav = document.getElementById('userNav');
+            const adminNav = document.getElementById('adminNav');
+
+            navLinks.classList.remove('d-none');
+            userNav.classList.add('d-none');
+            adminNav.classList.add('d-none');
+
+            if (sectionId === 'userDashboard') {
+                navLinks.classList.add('d-none');
+                userNav.classList.remove('d-none');
+                renderUserMaterials();
+            } else if (sectionId === 'adminDashboard') {
+                navLinks.classList.add('d-none');
+                adminNav.classList.remove('d-none');
+                renderAdminUsers();
+                renderAdminMaterials();
+                renderAdminContacts();
+            }
+        }
+        window.showSection = showSection;
+
+        // Registration
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const semester = document.getElementById('regSemester').value.trim();
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await addDoc(collection(db, 'users'), {
+                    uid: userCredential.user.uid,
+                    name,
+                    email,
+                    semester
+                });
+                document.getElementById('registerSuccess').classList.remove('d-none');
+                document.getElementById('registerForm').reset();
+                setTimeout(() => {
+                    document.getElementById('registerSuccess').classList.add('d-none');
+                    showSection('login');
+                }, 1500);
+            } catch (err) {
+                alert("Registration failed: " + err.message);
+            }
+        });
+
+        // User Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const userRef = collection(db, "users");
+                const q = query(userRef, where("uid", "==", userCredential.user.uid));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    currentUser = querySnapshot.docs[0].data();
+                    isAdmin = false;
+                    showSection('userDashboard');
+                    document.getElementById('loginError').classList.add('d-none');
+                }
+            } catch (err) {
+                document.getElementById('loginError').classList.remove('d-none');
+                console.error(err);
+            }
+        });
+
+        // Admin Login
+        document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value;
+
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                isAdmin = true;
+                showSection('adminDashboard');
+                document.getElementById('adminLoginError').classList.add('d-none');
+            } else {
+                document.getElementById('adminLoginError').classList.remove('d-none');
+            }
+            document.getElementById('adminLoginForm').reset();
+        });
+
+        // Logout
+        function logoutUser() {
+            signOut(auth).then(() => {
+                currentUser = null;
+                showSection('home');
+            }).catch((error) => {
+                console.error("Logout failed: ", error);
+            });
+        }
+        window.logoutUser = logoutUser;
+
+        function logoutAdmin() {
+            isAdmin = false;
+            showSection('home');
+        }
+        window.logoutAdmin = logoutAdmin;
+
+        // Add Material (Admin)
+        document.getElementById('addMaterialForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('materialTitle').value.trim();
+            const type = document.getElementById('materialType').value;
+            const link = document.getElementById('materialLink').value.trim();
+            const semester = document.getElementById('materialSemester').value.trim();
+
+            if (!title || !type || !link || !semester) return;
+
+            try {
+                await addDoc(collection(db, 'materials'), {
+                    title,
+                    type,
+                    link,
+                    semester
+                });
+                alert("Material added successfully!");
+                document.getElementById('addMaterialForm').reset();
+                renderAdminMaterials(); // Re-render the table
+            } catch (err) {
+                alert("Failed to add material: " + err.message);
+            }
+        });
+
+        // Remove Material (Admin)
+        async function removeMaterial(docId) {
+            try {
+                await deleteDoc(doc(db, 'materials', docId));
+                alert("Material removed successfully!");
+                renderAdminMaterials();
+            } catch (err) {
+                alert("Failed to remove material: " + err.message);
+            }
+        }
+        window.removeMaterial = removeMaterial;
+
+        // Remove User (Admin)
+        async function removeUser(userId) {
+            if (confirm("Are you sure you want to remove this user?")) {
+                try {
+                    await deleteDoc(doc(db, 'users', userId));
+                    await auth.currentUser.delete(); // This is a placeholder and has limitations, see notes.
+                    alert("User removed successfully!");
+                    renderAdminUsers();
+                } catch (err) {
+                    alert("Failed to remove user: " + err.message);
+                }
+            }
+        }
+        window.removeUser = removeUser;
+
+        // Contact Form
+        document.getElementById('contactForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('contactName').value.trim();
+            const email = document.getElementById('contactEmail').value.trim();
+            const msg = document.getElementById('contactMsg').value.trim();
+
+            try {
+                await addDoc(collection(db, 'messages'), {
+                    name,
+                    email,
+                    msg,
+                    timestamp: new Date()
+                });
+                document.getElementById('contactSuccess').classList.remove('d-none');
+                document.getElementById('contactForm').reset();
+                setTimeout(() => {
+                    document.getElementById('contactSuccess').classList.add('d-none');
+                }, 3000);
+            } catch (err) {
+                alert("Failed to send message: " + err.message);
+            }
+        });
+
+        // Render functions for dashboards
+        async function renderUserMaterials() {
+            const container = document.getElementById('userMaterials');
+            container.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+
+            if (!currentUser) return;
+
+            try {
+                const materialsCol = collection(db, 'materials');
+                const q = query(materialsCol, where("semester", "==", currentUser.semester));
+                const querySnapshot = await getDocs(q);
+
+                container.innerHTML = '';
+                if (querySnapshot.empty) {
+                    container.innerHTML = '<div class="col-12"><div class="alert alert-info">No materials for your semester/category yet.</div></div>';
+                    return;
+                }
+
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6';
+                    let content = '';
+                    if (data.type === 'pdf') {
+                        content = `<a href="${data.link}" target="_blank" class="btn btn-outline-primary">View PDF</a>`;
+                    } else if (data.type === 'video') {
+                        content = `<div class="ratio ratio-16x9"><iframe src="${data.link}" allowfullscreen></iframe></div>`;
+                    }
+                    col.innerHTML = `<div class="card p-3"><h5>${data.title}</h5>${content}<div class="mt-2"><span class="badge bg-secondary">${data.semester}</span></div></div>`;
+                    container.appendChild(col);
+                });
+            } catch (err) {
+                console.error("Error rendering user materials: ", err);
+                container.innerHTML = '<div class="col-12"><div class="alert alert-danger">Error loading materials.</div></div>';
+            }
+        }
+
+        async function renderAdminUsers() {
+            const tbody = document.getElementById('adminUserTable');
+            tbody.innerHTML = '';
+
+            try {
+                const querySnapshot = await getDocs(collection(db, 'users'));
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${data.name}</td><td>${data.email}</td><td>${data.semester}</td><td><button class='btn btn-danger btn-sm' onclick='removeUser("${doc.id}")'>Remove</button></td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Error rendering users: ", err);
+            }
+        }
+
+        async function renderAdminMaterials() {
+            const tbody = document.getElementById('adminMaterialTable');
+            tbody.innerHTML = '';
+
+            try {
+                const querySnapshot = await getDocs(collection(db, 'materials'));
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let linkHtml = data.type === 'pdf' ? `<a href="${data.link}" target="_blank">PDF</a>` : `<a href="${data.link}" target="_blank">Video</a>`;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${data.title}</td><td>${data.type.toUpperCase()}</td><td>${linkHtml}</td><td>${data.semester}</td><td><button class='btn btn-danger btn-sm' onclick='removeMaterial("${doc.id}")'>Remove</button></td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Error rendering materials: ", err);
+            }
+        }
+
+        async function renderAdminContacts() {
+            const tbody = document.getElementById('adminContactTable');
+            tbody.innerHTML = '';
+
+            try {
+                const querySnapshot = await getDocs(collection(db, 'messages'));
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${data.name}</td><td>${data.email}</td><td>${data.msg}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Error rendering contacts: ", err);
+            }
+        }
+
+        // Export users to Excel
+        async function exportUsersToExcel() {
+            const users = [];
+            const querySnapshot = await getDocs(collection(db, 'users'));
+            querySnapshot.forEach(doc => users.push(doc.data()));
+            const ws = XLSX.utils.json_to_sheet(users);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Users');
+            XLSX.writeFile(wb, 'studyhub_users.xlsx');
+        }
+        window.exportUsersToExcel = exportUsersToExcel;
+
+        // Export messages to Excel
+        async function exportMessagesToExcel() {
+            const messages = [];
+            const querySnapshot = await getDocs(collection(db, 'messages'));
+            querySnapshot.forEach(doc => messages.push(doc.data()));
+            const ws = XLSX.utils.json_to_sheet(messages);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Messages');
+            XLSX.writeFile(wb, 'studyhub_messages.xlsx');
+        }
+        window.exportMessagesToExcel = exportMessagesToExcel;
+
+        // Check auth state on page load
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userRef = collection(db, "users");
+                const q = query(userRef, where("uid", "==", user.uid));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    currentUser = querySnapshot.docs[0].data();
+                    isAdmin = false;
+                    showSection('userDashboard');
+                } else {
+                    // This case handles a user who is logged in but not in the 'users' collection (e.g., deleted by admin)
+                    await signOut(auth);
+                    showSection('home');
+                }
+            } else {
+                showSection('home');
+            }
+        });
+    </script>
+</body>
+
+</html>
